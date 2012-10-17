@@ -31,16 +31,16 @@ class Genotype(object):
     calculate Pr(self.genotype | base). Note, the base error probablity is not in Phred space
     for more see http://en.wikipedia.org/wiki/Phred_quality_score#Reliability
     """
-    def calculateBaseLikelihood ( specificBase, baseErrorProb):
+    def calculateBaseLikelihood ( self, specificBase, baseErrorProb):
         psGenotype=0.
     
         self.assertGenotype() #check if the ploidy is compatabile with self.genotype
         for i in range(self.ploidy):
             if self.genotype[i] != '-':
-                if specificBase == self.geno[i]:
+                if specificBase == self.genotype[i]:
                     psGenotype += ( 1 - baseErrorProb )
                 else:
-                    psGenotype += baseErrProb/3
+                    psGenotype += baseErrorProb/3
 
 
-        return psGenotype / ploidy
+        return psGenotype / self.ploidy
