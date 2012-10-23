@@ -12,8 +12,11 @@ class PileupData(object):
         self.end=end
         self.pileupcolumn_pos=pos
         """ this will be a list of tuples
-            with the tuples consisting of (readgroup,sample,alignment name, base, base quality"""
-        self.pileupList=pileuplist
+            with the tuples consisting of (sample,readgroup,alignment name, base, base quality"""
+       
+        Pileup = collections.namedtuple('Pileup', ['sample', 'RG', 'alignmentname', 'basecall', 'bq'])
+        #self.pileuList is now a list of Pileup namedtuple(s) 
+        self.pileupList= map(Pileup._make, pileuplist)
 
    
     def __str__(self):
@@ -43,19 +46,18 @@ class PileupData(object):
             see http://docs.python.org/release/3.2.3/library/itertools.html#itertools.groupby
             and http://stackoverflow.com/a/7286/1735942 on how to use itertools.grouper method
             for pileupdata in PileupOBject.yieldSamplePileupData:"""
-        for key, group in groupby(self.pileupList, lambda x: x[1]):
+        for key, group in groupby(self.pileupList, lambda x: x.sample):
             #lets return a namedtuple because we have lot of data in here
             # see http://docs.python.org/library/collections.html#collections.namedtuple
             # see http://stackoverflow.com/questions/2970608/what-are-named-tuples-in-python
-            Pileup = collections.namedtuple('Pileup', ['sample', 'RG', 'alignmentname', 'basecall', 'bq'])
-            data=list(group)[0]
-            yield Pileup._make(data)
+            
+            yield list(group)
 
     def getSamplePileupData(self, samplename):
         """ return list of namedtuple of pileup data for the particular samplename   """
-        Pileup = collections.namedtuple('Pileup', ['sample', 'RG', 'alignmentname', 'basecall', 'bq'])
+        
         #return [ tple for tple in self.pileupList if tple[0]== samplename ]
-        return [ Pileup._make(tple) for tple in self.pileupList if tple[0]== samplename ]
+        return [ tple for tple in self.pileupList if tple.sample== samplename ]
 
     
 
