@@ -1,4 +1,5 @@
 from itertools import groupby
+import collections
 class PileupData(object):
     """ represents a pileup column of reads for a chromosome and posiiton
         please note, start/stop is zero based, half open interval consistent
@@ -41,14 +42,20 @@ class PileupData(object):
         """ we can yield a list of pileup data by grouping info by sample
             see http://docs.python.org/release/3.2.3/library/itertools.html#itertools.groupby
             and http://stackoverflow.com/a/7286/1735942 on how to use itertools.grouper method
-
             for pileupdata in PileupOBject.yieldSamplePileupData:"""
         for key, group in groupby(self.pileupList, lambda x: x[1]):
-            yield list(group)
+            #lets return a namedtuple because we have lot of data in here
+            # see http://docs.python.org/library/collections.html#collections.namedtuple
+            # see http://stackoverflow.com/questions/2970608/what-are-named-tuples-in-python
+            Pileup = collections.namedtuple('Pileup', ['sample', 'RG', 'alignmentname', 'basecall', 'bq'])
+            data=list(group)[0]
+            yield Pileup._make(data)
 
     def getSamplePileupData(self, samplename):
-        """ return the pileupdata for the particular samplename   """
-        return [ tple for tple in self.pileupList if tple[0]== samplename ]
+        """ return list of namedtuple of pileup data for the particular samplename   """
+        Pileup = collections.namedtuple('Pileup', ['sample', 'RG', 'alignmentname', 'basecall', 'bq'])
+        #return [ tple for tple in self.pileupList if tple[0]== samplename ]
+        return [ Pileup._make(tple) for tple in self.pileupList if tple[0]== samplename ]
 
     
 
