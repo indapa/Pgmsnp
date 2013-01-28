@@ -1,4 +1,4 @@
-from itertools import groupby
+import itertools
 import collections
 class PileupData(object):
     """ represents a pileup column of reads for a chromosome and posiiton
@@ -15,12 +15,12 @@ class PileupData(object):
             with the tuples consisting of (sample,readgroup,alignment name, base, base quality"""
        
         Pileup = collections.namedtuple('Pileup', ['sample', 'RG', 'alignmentname', 'basecall', 'bq'])
-        #self.pileuList is now a list of Pileup namedtuple(s) 
+        #self.pileupList is now a list of Pileup namedtuple(s)
         self.pileupList= map(Pileup._make, pileuplist)
 
    
     def __str__(self):
-        return "\t".join( [self.chrom, str(self.start), str(self.end), str(self.pileupcolumn_pos)])
+        return "\t".join( [self.chrom, str(self.start), str(self.end), str(self.pileupcolumn_pos), "total pileupd reads: " + str(len(self.pileupList))])
 
     def getChrom(self):
         return self.chrom
@@ -46,11 +46,12 @@ class PileupData(object):
             see http://docs.python.org/release/3.2.3/library/itertools.html#itertools.groupby
             and http://stackoverflow.com/a/7286/1735942 on how to use itertools.grouper method
             for pileupdata in PileupOBject.yieldSamplePileupData:"""
-        for key, group in groupby(self.pileupList, lambda x: x.sample):
-            #lets return a namedtuple because we have lot of data in here
-            # see http://docs.python.org/library/collections.html#collections.namedtuple
-            # see http://stackoverflow.com/questions/2970608/what-are-named-tuples-in-python
-            
+        
+        # list needs to be sorted: http://stackoverflow.com/a/12088018/1735942
+        self.pileupList = sorted(self.pileupList, key=lambda x: x.sample)
+        #http://stackoverflow.com/a/783/1735942
+        #groupby needs the dat to be sorted becaue groupby method actually just iterates through a list and whenever the key changes it creates a new group.
+        for key, group in itertools.groupby(self.pileupList, lambda x: x.sample ):
             yield list(group)
 
     def getSamplePileupData(self, samplename):
