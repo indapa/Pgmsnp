@@ -38,8 +38,12 @@ class PileupData(object):
         self.end=end
 
     def getCoverage(self):
-        """ the coverage is the total number of records  in the piluepcolumn_pos list """
-        return len( self.pileupcolumn_pos)
+        """ the coverage is the total number of tuples  in the pileupList list """
+        return len(self.pileupList) )
+    
+    def getPileupColumnPos(self):
+        """ return the pileup column position """
+        return self.pileupcolumn_pos
 
     def yieldSamplePileupData(self):
         """ we can yield a list of pileup data by grouping info by sample
@@ -52,7 +56,7 @@ class PileupData(object):
         #http://stackoverflow.com/a/783/1735942
         #groupby needs the dat to be sorted becaue groupby method actually just iterates through a list and whenever the key changes it creates a new group.
         for key, group in itertools.groupby(self.pileupList, lambda x: x.sample ):
-            yield list(group)
+            yield ( key,list(group) )
 
     def getSamplePileupData(self, samplename):
         """ return list of namedtuple of pileup data for the particular samplename   """
