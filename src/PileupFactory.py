@@ -27,9 +27,14 @@ class PileupFactory(object):
         #here we just iterate thru the pileup columns collecting the observed basecalls and qualities in list of tuples
 
         for (chrom, start, end) in self.bedobj.yield_bedcoordinate():
-            
+
+            """ the pileup engine gets all reads that overlap the bed interval
+                if the pileupcolumn.pos is out of range of the bed interval, skip it"""
+
             pileup_iter=self.pybam.pileup( chrom,start,end,stepper = "all" )
             for pileupcolumn in pileup_iter:
+
+                if pileupcolumn.pos > end: continue
 
                 observed_data=[] #a list of (basecall, basequality) tuples
                 for pileupread in pileupcolumn.pileups:
@@ -39,7 +44,7 @@ class PileupFactory(object):
                     sample=self.readgroupdict[readgroup]
                     #ascii conver the basequality
                     bq=ord ( pileupread.alignment.qual[ pileupread.qpos ] )  - 33
-                   
+
                     #print samfile.getrname(tid),pileupcolumn.pos, observed_data
                     observed_data.append( (sample, readgroup, pileupread.alignment.qname,pileupread.alignment.seq[pileupread.qpos], bq) )
                 yield ( PileupData( chrom, start, end, pileupcolumn.pos, observed_data ) )
