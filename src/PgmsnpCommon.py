@@ -8,37 +8,42 @@ from Factor import *
 from PGMcommon import *
 from FactorOperations import *
 
-def calculateGLL(pileup):
+def calculateGLL(pileup,ploidy=2):
     """ calculate genotype log-likelhood(s) for all 10 possible genotypes
         given a list of namedtuples representing a pileup column """
     genotypes=[] #list of Genotype objects
-    ploidys=[2]
+    
     #enumerate possible genotype combinations for the value of ploidy
     #with the bases A,C,G,T
-    for p in ploidys:
-        l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],p) ]
-        for g in l:
-            #genotype="".join( list(g) )
-            genotypes.append( Genotype( g, p) )
+   
+    l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],ploidy) ]
+    for g in l:
+        genotype="".join( list(g) )
+        genotypes.append( Genotype( g, ploidy) ) #make a Genotype object, add to genotypes list
 
+    total_genotypes=len(genotypes)
     h=len(pileup)
     #print "total pileup: ", h
-    #the likelihood matrix is a 10 column matrix
-    #the number of rows is equal to the pileup count i.e. coverage at position
-    #we pre-allocate the likelihood matrix
-    likelihood_matrix=np.zeros( (h,10) )
-    #now we iterate through pileup, taking the ith called base and quality
+    """ the likelihood matrix is a 10 column matrix, where columns are genotypes
+       the number of rows is equal to the pileup count i.e. coverage at position
+       we pre-allocate the likelihood matrix"""
+    likelihood_matrix=np.zeros( (h,total_genotypes) )
+    #now we iterate through pileup, taking the ith called base and quality """
     for i in range(h):
         #print pileup[i]
         (calledBase, phred)=(pileup[i].basecall, pileup[i].bq)
         #for the jth possible genotype
         for j in range( len( genotypes)):
+            
             #get the error probability
             errorprob=ErrorProb(phred)
             #calculate the base likelihood (Pr(B=b|G=g)
             #fill in likelihood for the ith pileuped base for the jth possible genotype
-            likelihood_matrix[i,j]=genotypes[j].calculateBaseLikelihood(calledBase,errorprob)
-
+            #likelihood_matrix[i,j]=genotypes[j].calculateBaseLikelihood(calledBase,errorprob)
+            likelihood_matrix[i,j]=genotypes[j].calculateCorrectGenotypeLikelihood(calledBase,errorprob)
+    #for g in genotypes: print g
+    #print np.shape( likelihood_matrix )
+    print likelihood_matrix
 
     #now this is the log likelihood 
     #print np.log(likelihood_matrix)
@@ -47,7 +52,7 @@ def calculateGLL(pileup):
     return np.sum( np.log(likelihood_matrix), axis=0)
 
 
-def indexToGenotype( index, ploidy=2,alleles='ACGT' ):
+def indexToGenotype( index,alleles='ACGT',ploidy=2 ):
     """ return genotype at a given index position after
     enumerating all possible genotypes given string of alleles and
     assigning to a list. By default the list contains all possible 10 genotypes"""
@@ -74,27 +79,33 @@ def genotypeToIndex( geno, ploidy=2,alleles='ACGT'):
         print "genotype not in list of genotypes."
 
 
-def returnGenotypePriorFounderFactor( refbase,altbases,genotypePrior, theta=0.001,ploidy=2):
+def returnGenotypePriorFounderFactor( refbase,altbases,genotypePrior, theta=0.001,ploidy=2 ):
     """ Not sure this is right, but its simple enough
         This function returns a factor representing genotype priors, passing in the
         reference base, and list of alt alelles in altbase. genotypePrior is the name of the variable
         theta is heterozygosity rate set to .001 by default and ploidy is set to 2
         prior(ref homoz=1-3(theta/2), het=theta, alt homoz=theta/2  """
 
-    alleleList=([refbase]+altbases)
-    print ''.join(alleleList)
-    numAlleles=len(alleleList)
+    alleleList=[refbase]+altbases
+    #print alleleList
+    #numAlleles=len(alleleList)
+    numAlleles=len( ['A','C','G','T'] )
     f1= Factor( [genotypePrior ], [ ], [ ], 'genotypePrior')
     (allelesToGenotypes, genotypesToAlleles)=generateAlleleGenotypeMappers(numAlleles)
     (ngenos,ploidy)=np.shape(genotypesToAlleles)
+    #print ngenos
     f1.setCard([ ngenos] )
     values=np.zeros( (np.prod(f1.getCard()))).tolist()
     #print values
-    l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(alleleList,ploidy) ]
-    #l=[ "".join( list(combo)) for combo in itertools.product(alleleList,repeat=ploidy) ]
+    #l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(alleleList,ploidy) ]
+    l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],ploidy) ]
     print l
+    #l=[ "".join( list(combo)) for combo in itertools.product(alleleList,repeat=ploidy) ]
+    #print l
     for i in range(ngenos):
-        genotype=indexToGenotype(i, ''.join(alleleList) )
+        
+        #genotype=indexToGenotype(i, ''.join(alleleList) )
+        genotype=indexToGenotype(i, ''.join( ['A','C','G','T'] ) )
         (a1,a2)=list(genotype)
         #print a1,a2
         if a1 == a2 and refbase not in genotype:
