@@ -44,16 +44,17 @@ def main():
 
         pileup_column_pos=pileup_data_obj.getPileupColumnPos()
         pileup_column_chrom=pileup_data_obj.getChrom()
-        sequence=twobit[pileup_column_chrom][pileup_column_pos:pileup_column_pos+1]
-        print 'Pileup position: ', pileup_data_obj, "\t".join( [pileup_column_chrom,  str(pileup_column_pos), sequence])
+        refsequence=twobit[pileup_column_chrom][pileup_column_pos:pileup_column_pos+1] #this is the reference base
+        print 'Pileup position: ', pileup_data_obj, "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence])
         print
 
         #lets make our genetic network here:
-        pgmFactors=PgmNetworkFactory(options.pedfile,pileup_column_chrom,pileup_column_pos)
+        pgmFactors=PgmNetworkFactory(options.pedfile,pileup_column_chrom,pileup_column_pos, refsequence)
         """ At some point, we need to construct the clique tree from list of factors.
             But we fight that battle another day ..."""
-        print pgmFactors
-
+        print "pgmNetwork factor list: "
+        pgmFactors.printFactorList()
+        continue
         for (sample, pileup_sample_data) in pileup_data_obj.yieldSamplePileupData():
             #print pileup_sample_data
             genoVar=counter
