@@ -41,9 +41,9 @@ def calculateGLL(pileup,ploidy=2):
             #fill in likelihood for the ith pileuped base for the jth possible genotype
             #likelihood_matrix[i,j]=genotypes[j].calculateBaseLikelihood(calledBase,errorprob)
             likelihood_matrix[i,j]=genotypes[j].calculateCorrectGenotypeLikelihood(calledBase,errorprob)
-    #for g in genotypes: print g
+    for g in genotypes: print g
     #print np.shape( likelihood_matrix )
-    print likelihood_matrix
+    print np.log(likelihood_matrix)
 
     #now this is the log likelihood 
     #print np.log(likelihood_matrix)
@@ -79,55 +79,51 @@ def genotypeToIndex( geno, ploidy=2,alleles='ACGT'):
         print "genotype not in list of genotypes."
 
 
-def returnGenotypePriorFounderFactor( refbase,altbases,genotypePrior, theta=0.001,ploidy=2 ):
+def returnGenotypePriorFounderFactor( refbase, factorVar, theta=0.001,ploidy=2 ):
     """ Not sure this is right, but its simple enough
         This function returns a factor representing genotype priors, passing in the
         reference base, and list of alt alelles in altbase. genotypePrior is the name of the variable
         theta is heterozygosity rate set to .001 by default and ploidy is set to 2
         prior(ref homoz=1-3(theta/2), het=theta, alt homoz=theta/2  """
 
-    alleleList=[refbase]+altbases
-    #print alleleList
-    #numAlleles=len(alleleList)
+    
     numAlleles=len( ['A','C','G','T'] )
-    f1= Factor( [genotypePrior ], [ ], [ ], 'genotypePrior')
+    f1= Factor( [factorVar ], [ ], [ ], 'genotypePrior')
     (allelesToGenotypes, genotypesToAlleles)=generateAlleleGenotypeMappers(numAlleles)
     (ngenos,ploidy)=np.shape(genotypesToAlleles)
     #print ngenos
     f1.setCard([ ngenos] )
     values=np.zeros( (np.prod(f1.getCard()))).tolist()
     #print values
-    #l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(alleleList,ploidy) ]
-    l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],ploidy) ]
-    print l
-    #l=[ "".join( list(combo)) for combo in itertools.product(alleleList,repeat=ploidy) ]
+    # l is the exhaustive set possible genotypes for a given ploidy
+    #l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],ploidy) ]
     #print l
+    
     for i in range(ngenos):
         
-        #genotype=indexToGenotype(i, ''.join(alleleList) )
         genotype=indexToGenotype(i, ''.join( ['A','C','G','T'] ) )
         (a1,a2)=list(genotype)
         #print a1,a2
         if a1 == a2 and refbase not in genotype:
-            print genotype, 'non-ref homoz'
+            #print genotype, 'non-ref homoz'
             values[i]=(theta / 2.)
         elif a1==a2==refbase:
-            print genotype, 'homoz reference'
+            #print genotype, 'homoz reference'
             values[i]= 1 - (3*(theta/2.))
         elif a1!=a2 and refbase in genotype:
-            print genotype, 'heterzygote'
+            #print genotype, 'heterzygote'
             values[i]=theta
         else:
-            print genotype, 'tri-alleleic het'
+            #print genotype, 'tri-alleleic het'
             values[i]=np.power( [ theta/2 ], 3).tolist()[0]
     #print values
     f1.setVal(values)
     return f1
 
-def returnGenotypeGivenParentsFactor( numAlleles, genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo  ):
+def returnGenotypeGivenParentsFactor(  genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo, factorName="child|parent 1, parent2", numAlleles=4,   ):
     """ return a Factor object that represents pr( offspring_genotype | genotype_mother, genotype_father )
         basically this is a Punnet square """
-    f1= Factor( [genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo ], [ ], [ ])
+    f1= Factor( [genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo ], [ ], [ ], factorName )
     (allelesToGenotypes, genotypesToAlleles)=generateAlleleGenotypeMappers(numAlleles)
     (ngenos,ploidy)=np.shape(genotypesToAlleles)
     f1.setCard([ ngenos,ngenos,ngenos ] )
