@@ -4,6 +4,7 @@ from PedigreeFactors import *
 from PgmsnpCommon import *
 #import itertools
 #import numpy as np
+
 """" Still not sure how this is going to work
      This class is a factory for generating a genetic network
      If we consider each location in the genome independent
@@ -36,7 +37,7 @@ class PgmNetworkFactory(object):
         self.pedigree.parsePedfile()
         self.pedlist=self.pedigree.getPedList()
         self.pedids=self.pedigree.returnIndivids()
-        
+        self.totalsize=self.pedigree.getTotalSize()
 
         #list of factors that will comprise the Genetic network
         self.totalFactors=self.pedigree.getTotalSize() * 2
@@ -69,20 +70,21 @@ class PgmNetworkFactory(object):
                 parent1Index=self.pedids.index( self.pedlist[i].getParents()[0] )
                 parent2Index=self.pedids.index( self.pedlist[i].getParents()[1] )
                 child=self.pedlist[i].getid()
-                print 'child: ', type(child)
+                
                 parent1name=self.pedlist[parent1Index].getid()
                 parent2name=self.pedlist[parent2Index].getid()
-                print 'p1: ', type(parent1name)
-                print 'p2: ', type(parent2name)
+               
                 name= " ".join ( [child+" genotype | ", "parent " + parent1name, ",",  "parent " + parent2name] )
                 
-                #returnGenotypeGivenParentsFactor(  genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo, numAlleles=4  )
+                #the variable names are the index of the individuals in the list of memebers of the pedigrees
+                #this helps when making the variable number for the factor Reads | Genotypes
                 self.factorList[i]=returnGenotypeGivenParentsFactor(i, parent1Index ,  parent2Index , name, self.totalAlleles)
                 
                 #returnGenotypeGivenParentsFactor(numAlleles, genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo)
 
             name=self.pedlist[i].getid()+" read phenotype | " + self.pedlist[i].getid() + " genotype"
             #GLFactor = Factor( [readVar, genoVar], [1,10], [], 'read_phenotype | genotype ')
+            #this factor is the reads | genotype
             self.factorList[i+totalPeople]=Factor([i+totalPeople,i],[],[], name )
 
     def getFactorList(self):
@@ -91,6 +93,10 @@ class PgmNetworkFactory(object):
     def printFactorList(self):
         for f in self.factorList:
             print "factor: ", f
+            print 
         #return "\n".join(networkOutstrings)
 
-
+    def getSampleNamePedIndex(self,samplename):
+        return self.pedids.index( samplename )
+    def returnTotalSize(self):
+        return self.totalsize
