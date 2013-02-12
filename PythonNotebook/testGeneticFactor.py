@@ -11,7 +11,6 @@ import bx.seq.twobit
 from FactorOperations import *
 from PgmNetworkFactory import *
 
-
 """ Let's test contructing our genetic network for the pgmsnp caller
     For simplicity we consider each position in a genome indpendently from each other.
     We iterate through the bedfile interval, and for each position in the interval we will:
@@ -31,14 +30,17 @@ def main():
     (options, args)=parser.parse_args()
     bamfile=args[0]
     
-    
+   
     twobit=bx.seq.twobit.TwoBitFile( open( options.tbfile  ) )
     bedobj=Bedfile(options.bedfile)
     pybamfile=pysam.Samfile( bamfile, "rb" )
     #pyfai=pysam.Fastafile(options.faidxfile)
     # Pfactor gives us a pileup iterator
     Pfactory=PileupFactory(pybamfile,bedobj)
-    counter=0
+
+
+
+
     for pileup_data_obj in Pfactory.yieldPileupData():
 
 
@@ -49,31 +51,25 @@ def main():
         print
 
         #lets make our genetic network here:
-        pgmFactors=PgmNetworkFactory(options.pedfile,pileup_column_chrom,pileup_column_pos, refsequence)
+        pgmNetwork=PgmNetworkFactory(options.pedfile,pileup_column_chrom,pileup_column_pos, refsequence)
+        totalSize=pgmNetwork.returnTotalSize()
         """ At some point, we need to construct the clique tree from list of factors.
             But we fight that battle another day ..."""
-        print "pgmNetwork factor list: "
-        pgmFactors.printFactorList()
-        continue
+        #print "pgmNetwork factor list: "
+        pgmNetwork.printFactorList()
+        print "++++"
+        
         for (sample, pileup_sample_data) in pileup_data_obj.yieldSamplePileupData():
-            #print pileup_sample_data
-            genoVar=counter
-            counter+=1
-            readVar=counter
-            counter+=1
+            print sample
+            print pgmNetwork.getSampleNamePedIndex(sample), totalSize
+            print pileup_sample_data
+        
             value=calculateGLL(pileup_sample_data)
-            GLFactor = Factor( [readVar, genoVar], [1,10], [], 'read_phenotype | genotype ')
-            gPrior=LogFactor( returnGenotypePriorFounderFactor(sequence,['A','C','G','T'], genoVar) )
-            
-            #print sample, value
-            GLFactor.setVal(value)
+            print value
+            #GLFactor = Factor( [readVar, genoVar], [1,10], [], 'read_phenotype | genotype ')
+            #gPrior=LogFactor( returnGenotypePriorFounderFactor(sequence,['A','C','G','T'], genoVar) )
             print
-            print gPrior
-            print
-            print GLFactor
-            print 
-            print FactorSum(gPrior, GLFactor)
-            print 
+     
         print "==="
         counter=0
 
