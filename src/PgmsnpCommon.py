@@ -41,9 +41,10 @@ def calculateGLL(pileup,ploidy=2):
             #fill in likelihood for the ith pileuped base for the jth possible genotype
             #likelihood_matrix[i,j]=genotypes[j].calculateBaseLikelihood(calledBase,errorprob)
             likelihood_matrix[i,j]=genotypes[j].calculateCorrectGenotypeLikelihood(calledBase,errorprob)
-    for g in genotypes: print g
+    """ debug print statments """
+    #for g in genotypes: print g
     #print np.shape( likelihood_matrix )
-    print np.log(likelihood_matrix)
+    #print np.log(likelihood_matrix)
 
     #now this is the log likelihood 
     #print np.log(likelihood_matrix)
