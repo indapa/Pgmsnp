@@ -34,7 +34,7 @@ def main():
     twobit=bx.seq.twobit.TwoBitFile( open( options.tbfile  ) )
     bedobj=Bedfile(options.bedfile)
     pybamfile=pysam.Samfile( bamfile, "rb" )
-    #pyfai=pysam.Fastafile(options.faidxfile)
+    
     # Pfactor gives us a pileup iterator
     Pfactory=PileupFactory(pybamfile,bedobj)
 
@@ -57,15 +57,21 @@ def main():
             But we fight that battle another day ..."""
         #print "pgmNetwork factor list: "
         pgmNetwork.printFactorList()
+        pgmFactorList=pgmNetwork.getFactorList()
         print "++++"
         
         for (sample, pileup_sample_data) in pileup_data_obj.yieldSamplePileupData():
             print sample
-            print pgmNetwork.getSampleNamePedIndex(sample), totalSize
+            sample_idx=pgmNetwork.getSampleNamePedIndex(sample)
+            print pgmFactorList[sample_idx + totalSize]
+            print
+            
             print pileup_sample_data
         
             value=calculateGLL(pileup_sample_data)
-            print value
+            pgmFactorList[sample_idx + totalSize].setVal(value)
+            print pgmFactorList[sample_idx + totalSize]
+            
             #GLFactor = Factor( [readVar, genoVar], [1,10], [], 'read_phenotype | genotype ')
             #gPrior=LogFactor( returnGenotypePriorFounderFactor(sequence,['A','C','G','T'], genoVar) )
             print
