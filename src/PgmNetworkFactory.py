@@ -2,8 +2,9 @@ from Factor import *
 from FactorOperations import *
 from PedigreeFactors import *
 from PgmsnpCommon import *
-#import itertools
+import itertools
 #import numpy as np
+import sys
 
 """" Still not sure how this is going to work
      This class is a factory for generating a genetic network
@@ -25,7 +26,7 @@ class PgmNetworkFactory(object):
         For the full probablistic calculation it set at 4 (ACGT). In practice, assuming
         most sites are bi-allelic its value is 2."""
 
-    def __init__(self, pedfile, chrom, position, refbase, totalAlleles=4):
+    def __init__(self, pedfile, chrom, position, refbase, totalAlleles=4, ploidy=2):
         #parse pedfile
         
         
@@ -42,7 +43,8 @@ class PgmNetworkFactory(object):
         #list of factors that will comprise the Genetic network
         self.totalFactors=self.pedigree.getTotalSize() * 2
         self.factorList=self.totalFactors*[None]
-
+        self.ploidy=ploidy
+        self.genotypeCardinality=len( [ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C', 'G', 'T'],ploidy) ] )
         self.constructNetwork()
 
 
@@ -85,7 +87,7 @@ class PgmNetworkFactory(object):
             name=self.pedlist[i].getid()+" read phenotype | " + self.pedlist[i].getid() + " genotype"
             #GLFactor = Factor( [readVar, genoVar], [1,10], [], 'read_phenotype | genotype ')
             #this factor is the reads | genotype
-            self.factorList[i+totalPeople]=Factor([i+totalPeople,i],[],[], name )
+            self.factorList[i+totalPeople]=Factor([i+totalPeople,i],[1, self.genotypeCardinality],[], name )
 
     def getFactorList(self):
         return self.factorList
@@ -96,7 +98,15 @@ class PgmNetworkFactory(object):
             print 
         #return "\n".join(networkOutstrings)
 
+    """ given a sample name, return its index position in the list of individual ids for the pgmNetwork
+        If  not present, then throw a ValueError exception and exit"""
     def getSampleNamePedIndex(self,samplename):
-        return self.pedids.index( samplename )
+        try:
+            return self.pedids.index( samplename )
+        except ValueError:
+            print samplename + " not in ped file"
+            sys.exit(1)
+
+
     def returnTotalSize(self):
         return self.totalsize
