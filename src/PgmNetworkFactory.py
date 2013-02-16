@@ -16,7 +16,7 @@ import sys
      PhenotypeGivenGenotypeFactor. If a member is a founder it is represented by
      a returnGenotypePriorFounderFactor. If a member is a non-founder it is reprsented by
      a returnGenotypeGivenParentsFactor. The first is a simple factor representing a genotype prior.
-     The second is basically a Punnet square representing Mendelian probabilities.
+     The second is basically a Punnet square representing Mendelian inheritance probabilities.
      """
 
 class PgmNetworkFactory(object):
@@ -53,11 +53,12 @@ class PgmNetworkFactory(object):
         """ make a new network  """
         totalPeople=self.pedigree.getTotalSize()
         for i in range( totalPeople ):
-            
+
+            j=i+1
             
             if self.pedlist[i].isFounder():
                 """ if its a founder invidual, assign it GenotypePriorFounderFactor """
-                self.factorList[i]=returnGenotypePriorFounderFactor( self.refbase,i )
+                self.factorList[i]=returnGenotypePriorFounderFactor( self.refbase,j )
 
                 #previously, we assigned it a factor based on HWE and given allele frequencies.
                 #I suppose we could use this for genotyping previoulsy known sites
@@ -69,8 +70,8 @@ class PgmNetworkFactory(object):
                 #3print self.pedlist[i].getParents(), self.pedlist[i].getid()
                 #GenotypeGivenParentsFactor(2,"bart","homer","marge","""Bart | Homer, Marge """)
                 #self.factorList[i]=GenotypeGivenParentsFactor(self.totalAlleles, self.pedlist[i].getid(), self.pedlist[i].getParents()[0], self.pedlist[i].getParents()[1], "child|Father,Child")
-                parent1Index=self.pedids.index( self.pedlist[i].getParents()[0] )
-                parent2Index=self.pedids.index( self.pedlist[i].getParents()[1] )
+                parent1Index=self.pedids.index( self.pedlist[i].getParents()[0] )+1
+                parent2Index=self.pedids.index( self.pedlist[i].getParents()[1] )+1
                 child=self.pedlist[i].getid()
                 
                 parent1name=self.pedlist[parent1Index].getid()
@@ -80,14 +81,14 @@ class PgmNetworkFactory(object):
                 
                 #the variable names are the index of the individuals in the list of memebers of the pedigrees
                 #this helps when making the variable number for the factor Reads | Genotypes
-                self.factorList[i]=returnGenotypeGivenParentsFactor(i, parent1Index ,  parent2Index , name, self.totalAlleles)
+                self.factorList[i]=returnGenotypeGivenParentsFactor(j, parent1Index ,  parent2Index , name, self.totalAlleles)
                 
                 #returnGenotypeGivenParentsFactor(numAlleles, genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo)
 
             name=self.pedlist[i].getid()+" read phenotype | " + self.pedlist[i].getid() + " genotype"
             #GLFactor = Factor( [readVar, genoVar], [1,10], [], 'read_phenotype | genotype ')
             #this factor is the reads | genotype
-            self.factorList[i+totalPeople]=Factor([i+totalPeople,i],[1, self.genotypeCardinality],[], name )
+            self.factorList[i+totalPeople]=Factor([j+totalPeople,j],[1, self.genotypeCardinality],[], name )
 
     def getFactorList(self):
         return self.factorList
