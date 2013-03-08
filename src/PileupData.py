@@ -39,7 +39,7 @@ class PileupData(object):
 
     def getCoverage(self):
         """ the coverage is the total number of tuples  in the pileupList list """
-        return len(self.pileupList) )
+        return len(self.pileupList) 
     
     def getPileupColumnPos(self):
         """ return the pileup column position """
@@ -63,6 +63,14 @@ class PileupData(object):
         
         #return [ tple for tple in self.pileupList if tple[0]== samplename ]
         return [ tple for tple in self.pileupList if tple.sample== samplename ]
+
+    def getPileupDepth(self):
+        """ return the total number of reads piled up """
+        return len(self.pileupList)
+
+    def getSetObservedBases(self):
+        """ return a set object of observed bases for the entire pileup of bases """
+        return set( [ namedtpl.basecall for namedtpl in self.pileupList ] )
 
     
 
