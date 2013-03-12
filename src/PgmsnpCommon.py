@@ -160,20 +160,10 @@ def returnGenotypeGivenParentsFactor(  genotypeVarChild, genotypeVarParentOne, g
     return f1
 
 
-def determineAltBases( genotypes, refbase):
-    """ given a list of MAP genotypes and the ref base, determing the segregating alt base """
 
-    alleles= [ list(tuple(g)) for g in genotypes ]
-    observed_alleles=set( list(itertools.chain.from_iterable(alleles)) )
 
-    alt='.'
-    altbases= list( observed_alleles - set(refbase) )
 
-    if len(altbases) == 0:
-        alt='.'
 
-    elif len(altbases) > 1:
-        alt=",".join(altbases )
-    else:
-        alt=altbases[0]
-    return alt
+
+
+
