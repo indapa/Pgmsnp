@@ -14,7 +14,7 @@ from PedigreeFactors import Pedfile
 import datetime
 
 #import matplotlib.pyplot as plt
-#import pdb
+import pdb
 
 """ Let's test contructing our genetic network for the pgmsnp caller
     For simplicity we consider each position in a genome indpendently from each other.
@@ -49,7 +49,7 @@ def main():
 
     samplenames=pedfile.returnIndivids()
     samplestring="\t".join(samplenames)
-    referencefile=options.tbfile
+    
 
     #vcf metainfolines
     vcf_metalines=[]
@@ -90,6 +90,7 @@ def main():
         pileup_column_chrom=pileup_data_obj.getChrom()
         refsequence=twobit[pileup_column_chrom][pileup_column_pos:pileup_column_pos+1] #this is the reference base
 
+        
         #print 'Pileup position: ', pileup_data_obj, "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence])
         #print
         
@@ -102,7 +103,8 @@ def main():
         #lets make our genetic network here:
         pgmNetwork=PgmNetworkFactory(options.pedfile,pileup_column_chrom,pileup_column_pos, refsequence)
         totalSize=pgmNetwork.returnTotalSize()
-        totalObservedSamples=0
+        observedSamples=[]
+        sampleNames=set(pgmNetwork.getSampleNames())
         #print "pgmNetwork factor list: "
         #pgmNetwork.printFactorList()
         pgmFactorList=pgmNetwork.getFactorList()
@@ -110,7 +112,7 @@ def main():
         
         for (sample, pileup_sample_data) in pileup_data_obj.yieldSamplePileupData():
             sampleDepth[sample]=len(pileup_sample_data)
-            totalObservedSamples+=1
+            observedSamples.append(sample)
             sample_idx=pgmNetwork.getSampleNamePedIndex(sample)
             #print pgmFactorList[sample_idx + totalSize]
             #print
@@ -118,6 +120,8 @@ def main():
             #print pileup_sample_data
         
             value=calculateGLL(pileup_sample_data)
+            
+
             pgmFactorList[sample_idx + totalSize].setVal(value)
             #we initially get the log-likelihood, but go back to probablity space first
             pgmFactorList[sample_idx + totalSize] = ExpFactor( pgmFactorList[sample_idx + totalSize] )
@@ -126,10 +130,17 @@ def main():
             #GLFactor = Factor( [readVar, genoVar], [1,10], [], 'read_phenotype | genotype ')
             #gPrior=LogFactor( returnGenotypePriorFounderFactor(sequence,['A','C','G','T'], genoVar) )
             #print
-        siteNS="NS="+str(totalObservedSamples)
+        observedSamples=set(observedSamples)
+        unobservedSamples=sampleNames-observedSamples
+        unobservedIdxs=[ pgmNetwork.getSampleNamePedIndex(sample) for sample in unobservedSamples  ]
+        #for samples lacking read data, delete them from the list of
+        for idx in unobservedIdxs:
+            del pgmFactorList[idx + totalSize]
+        #print pgmFactorList
+        siteNS="NS="+str(len(observedSamples))
         infoString=";".join([siteNS, siteDP])
         
-        #site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), refsequence,alt,qual,filter,infoString, "GT:DP:GP"])
+        
         
         #for f in pgmFactorList:
         #    print f
@@ -176,16 +187,23 @@ def main():
         for sample in sampleNames:
             sampleDepths.append(str(sampleDepth[sample]))
         MAPgenotypes=[ALPHABET[ i ] for i in  MAPAssignment[0:totalSize] ]
-        
+        #print MAPgenotypes
+
         alt=determineAltBases( MAPgenotypes, [refsequence] )
-        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), refsequence,alt,qual,filter,infoString, "GT:DP"])
+        numericalMAPgenotypes=[ numericalGenotypes(refsequence,alt,map_g) for map_g in MAPgenotypes ]
+        #print numericalMAPgenotypes
+        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".", refsequence,alt,qual,filter,infoString, "GT:DP"])
         #zip the genotype assignment and its log-probability together
-        genotypedata=zip(MAPgenotypes,sampleDepths,MAXvalues[0:totalSize])
-        genotypedata=zip(MAPgenotypes,sampleDepths)
+        #genotypedata=zip(MAPgenotypes,sampleDepths,MAXvalues[0:totalSize])
+        #genotypedata=zip(MAPgenotypes,sampleDepths)
+        genotypedata=zip(numericalMAPgenotypes,sampleDepths,MAXvalues[0:totalSize])
+        genotypedata=zip(numericalMAPgenotypes,sampleDepths)
         genotypedata=[ ":".join(list(i)) for i in  genotypedata ]
+
         #print  genotypedata
         #print sampleGenotypes
-        print "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence]) + "\t" +"\t".join(MAPgenotypes)
+        #print "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence]) + "\t" +"\t".join(MAPgenotypes)
+        print "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence]) + "\t" +"\t".join(numericalMAPgenotypes)
         #print site_info
         vcfgenotypeoutput="\t".join(genotypedata)
         output=site_info+ "\t"+vcfgenotypeoutput
@@ -193,7 +211,7 @@ def main():
         #if the total size (in nodes) of the network is N, the first N/2 elements
         #are genotype variables of the individuals
 
-        #break
+        
     
 if __name__ == "__main__":
     main()
