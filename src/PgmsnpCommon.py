@@ -7,6 +7,7 @@ from common import *
 from Factor import *
 from PGMcommon import *
 from FactorOperations import *
+from collections import defaultdict
 
 def calculateGLL(pileup,ploidy=2):
     """ calculate genotype log-likelhood(s) for all 10 possible genotypes
@@ -18,7 +19,7 @@ def calculateGLL(pileup,ploidy=2):
    
     l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],ploidy) ]
     for g in l:
-        genotype="".join( list(g) )
+        
         genotypes.append( Genotype( g, ploidy) ) #make a Genotype object, add to genotypes list
 
     total_genotypes=len(genotypes)
@@ -121,7 +122,7 @@ def returnGenotypePriorFounderFactor( refbase, factorVar, theta=0.001,ploidy=2 )
     f1.setVal(values)
     return f1
 
-def returnGenotypeGivenParentsFactor(  genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo, factorName="child|parent 1, parent2", numAlleles=4,   ):
+def returnGenotypeGivenParentsFactor(  genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo, factorName="child|parent 1, parent2", numAlleles=4  ):
     """ return a Factor object that represents pr( offspring_genotype | genotype_mother, genotype_father )
         basically this is a Punnet square """
     f1= Factor( [genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo ], [ ], [ ], factorName )
@@ -142,15 +143,16 @@ def returnGenotypeGivenParentsFactor(  genotypeVarChild, genotypeVarParentOne, g
         #list of tuples containing list of zygote(genotype) tuples
         zygote_list=list(itertools.product(parent1gametes,parent2gametes))
         punnet_freq=[  allelesToGenotypes[zygote[0],zygote[1]] for zygote in zygote_list ]
-        histc={}
+        histc = defaultdict(int)
         hist=[]
-        for g in range( ngenos):
-            histc[g]=0.
+        
         for x in punnet_freq:
             histc[x]+=1.
             #print histc.values()
-        for g in range (ngenos):
-            hist.append ( histc[g] )
+
+        hist=[ histc[g] for g in range(ngenos) ]
+        #for g in range (ngenos):
+        #    hist.append ( histc[g] )
             #print punnet_freq
         hist=(np.array ( hist)) /4
         values[z]=hist[childAssignment]
@@ -158,6 +160,67 @@ def returnGenotypeGivenParentsFactor(  genotypeVarChild, genotypeVarParentOne, g
         f1.setVal( values )
 
     return f1
+
+
+def returnPunnetValues( numAlleles=4 ):
+    """ return a list of transition probabilities for an offpsring genotype, conditional
+        on parental genotypes: Pr(offspring| parent1, parent2)
+        Basically this returns the probabilities from  Punnet square.
+        We pass in the number of alleles at a site. If we consider a bi-allelic site,
+        then we return a 27 transition probabilities, since there are 3x3x3 possible genotypes
+        given 2 alleles.
+
+        Complete enumeration be passing in 4 alleles, for a possible of 10 genotypes for each
+        individual. This would be a 10x10x10 size of transition probabilities.
+
+        Father Mother offspring_homoz offspring_het offspring_het
+        dd       dd          1              0             0
+        dd       Dd         .5             .5             0
+        .
+        .
+        .
+        DD       DD          0              0             0"""
+
+    (allelesToGenotypes, genotypesToAlleles)=generateAlleleGenotypeMappers(numAlleles)
+    (ngenos,ploidy)=np.shape(genotypesToAlleles)
+
+    cardinality=np.array( [ngenos,ngenos,ngenos] )
+
+    #set the values to zero initially
+    values=np.zeros( np.prod(cardinality)).tolist()
+    values=np.zeros( np.prod(cardinality)).tolist()
+    assignments=IndexToAssignment(np.arange(np.prod(cardinality)),cardinality)-1
+
+    for z in range( np.prod(cardinality) ):
+        curr_assign= assignments[z]
+
+        childAssignment=int(curr_assign[0])
+
+        parent1gametes= genotypesToAlleles[curr_assign[1],:]
+        parent2gametes= genotypesToAlleles[curr_assign[2],:]
+
+        #list of tuples containing list of zygote(genotype) tuples
+        zygote_list=list(itertools.product(parent1gametes,parent2gametes))
+
+        punnet_freq=[  allelesToGenotypes[zygote[0],zygote[1]] for zygote in zygote_list ]
+
+        histc = defaultdict(int)
+
+        hist=[]
+
+        for x in punnet_freq:
+            histc[x]+=1.
+            #print histc.values()
+        hist=[ histc[g] for g in range(ngenos) ]
+
+
+        hist=(np.array ( hist)) /4
+        values[z]=hist[childAssignment]
+
+
+        #print
+
+    return values
 
 
 
