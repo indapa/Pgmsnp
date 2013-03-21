@@ -54,6 +54,17 @@ def calculateGLL(pileup,ploidy=2):
     return np.sum( np.log(likelihood_matrix), axis=0)
 
 
+def calculateNoObservationsGL(ploidy=2):
+    
+    l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],ploidy) ]
+    genotypes=[ Genotype( g, ploidy)  for g in l ]
+    total_genotypes=len(genotypes)
+    """ the prob(no data | genotype ) is 1
+        We keep the numbers in probablity space"""
+    likelihood_matrix=np.ones( (1,total_genotypes))
+    return np.sum( likelihood_matrix, axis=0)
+
+
 def indexToGenotype( index,alleles='ACGT',ploidy=2 ):
     """ return genotype at a given index position after
     enumerating all possible genotypes given string of alleles and
@@ -121,6 +132,25 @@ def returnGenotypePriorFounderFactor( refbase, factorVar, theta=0.001,ploidy=2 )
     #print values
     f1.setVal(values)
     return f1
+
+
+def returnNonFoundersFactor(  genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo, values, factorName="child|parent 1, parent2",numAlleles=4  ):
+    """ return a Factor object that represents pr( offspring_genotype | genotype_mother, genotype_father )
+        values are the transition probalities of pr(offspring_genotype|mother,father)
+        These don't change, so we calculate them once and the pass them in as a parameter.
+        The only thing you are doing is setting the variable names and cardinality (based on the number of alleles)
+        Note, when you calculate the transition probablities in values with returnPunnetValues,
+        make sure the numAlleles is the same. Otherwise there will be a dimenionality mismatch!"""
+    f1= Factor( [genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo ], [ ], values, factorName )
+    (allelesToGenotypes, genotypesToAlleles)=generateAlleleGenotypeMappers(numAlleles)
+    (ngenos,ploidy)=np.shape(genotypesToAlleles)
+    f1.setCard([ ngenos,ngenos,ngenos ] )
+    #set the values to zero initially
+    
+    
+
+    return f1
+
 
 def returnGenotypeGivenParentsFactor(  genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo, factorName="child|parent 1, parent2", numAlleles=4  ):
     """ return a Factor object that represents pr( offspring_genotype | genotype_mother, genotype_father )
