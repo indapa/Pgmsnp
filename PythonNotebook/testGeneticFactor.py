@@ -12,7 +12,7 @@ from PgmNetworkFactory import *
 from CliqueTreeOperations import *
 from PedigreeFactors import Pedfile
 import datetime
-
+from collections import defaultdict
 #import matplotlib.pyplot as plt
 import pdb
 
@@ -74,7 +74,8 @@ def main():
 
     #print samplenames
 
-    
+    #return the complete enumeration of all possible offspring genotype priors
+    punnetValues=returnPunnetValues(4)
 
     # Pfactor gives us a pileup iterator
     Pfactory=PileupFactory(pybamfile,bedobj)
@@ -97,11 +98,12 @@ def main():
         qual="."
         filter='.'
         siteDP="DP="+str(pileup_data_obj.getPileupDepth())
-        sampleDepth={}
+        
+        sampleDepth=defaultdict(int)
 
 
         #lets make our genetic network here:
-        pgmNetwork=PgmNetworkFactory(options.pedfile,pileup_column_chrom,pileup_column_pos, refsequence)
+        pgmNetwork=PgmNetworkFactory(options.pedfile,pileup_column_chrom,pileup_column_pos, refsequence,punnetValues)
         totalSize=pgmNetwork.returnTotalSize()
         observedSamples=[]
         sampleNames=set(pgmNetwork.getSampleNames())
@@ -135,8 +137,16 @@ def main():
         unobservedIdxs=[ pgmNetwork.getSampleNamePedIndex(sample) for sample in unobservedSamples  ]
         #for samples lacking read data, delete them from the list of
         for idx in unobservedIdxs:
-            del pgmFactorList[idx + totalSize]
+            #del pgmFactorList[idx + totalSize]
+            value=calculateNoObservationsGL()
+            #pdb.set_trace()
+            pgmFactorList[idx + totalSize].setVal(value)
+
         #print pgmFactorList
+        #for f in pgmFactorList:
+        #    print f
+        #continue
+        #print "====="
         siteNS="NS="+str(len(observedSamples))
         infoString=";".join([siteNS, siteDP])
         
@@ -160,10 +170,11 @@ def main():
 
         #get the max marginal factors
         MAXMARGINALS=ComputeExactMarginalsBP(pgmFactorList, [], 1)
+        #print MAXMARGINALS
         #MARGINALS= ComputeExactMarginalsBP( pgmFactorList)
         #this log normalizes the data
         for m in MAXMARGINALS:
-        #    print m
+            #print m
             m.setVal( np.log( lognormalize(m.getVal()   )   ) )
         #    print np.sum( lognormalize(m.getVal() ) )
         #    print  m.getVal()
@@ -183,6 +194,7 @@ def main():
 
         #we convert from  variable assignment in the factor to genotype space
         sampleNames=pgmNetwork.returnGenotypeFactorIdxSampleNames()
+      
         sampleDepths=[]
         for sample in sampleNames:
             sampleDepths.append(str(sampleDepth[sample]))
@@ -211,7 +223,7 @@ def main():
         #if the total size (in nodes) of the network is N, the first N/2 elements
         #are genotype variables of the individuals
 
-        
+        #break
     
 if __name__ == "__main__":
     main()
