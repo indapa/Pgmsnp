@@ -6,7 +6,7 @@ import itertools
 #import numpy as np
 import sys
 
-"""" Still not sure how this is going to work
+"""" 
      This class is a factory for generating a genetic network
      If we consider each location in the genome independent
      we generate a new network for each position along an interval.
@@ -26,9 +26,8 @@ class PgmNetworkFactory(object):
         For the full probablistic calculation it set at 4 (ACGT). In practice, assuming
         most sites are bi-allelic its value is 2."""
 
-    def __init__(self, pedfile, chrom, position, refbase, totalAlleles=4, ploidy=2):
+    def __init__(self, pedfile, chrom, position, refbase, nonfounderpriorvalues, totalAlleles=4, ploidy=2):
         #parse pedfile
-        
         
         self.chrom=chrom
         self.pos=position
@@ -45,6 +44,7 @@ class PgmNetworkFactory(object):
         self.factorList=self.totalFactors*[None]
         self.ploidy=ploidy
         self.genotypeCardinality=len( [ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C', 'G', 'T'],ploidy) ] )
+        self.nonfounderpriorvalues=nonfounderpriorvalues
         self.constructNetwork()
 
 
@@ -81,8 +81,8 @@ class PgmNetworkFactory(object):
                 
                 #the variable names are the index of the individuals in the list of memebers of the pedigrees
                 #this helps when making the variable number for the factor Reads | Genotypes
-                self.factorList[i]=returnGenotypeGivenParentsFactor(j, parent1Index ,  parent2Index , name, self.totalAlleles)
-                
+                #self.factorList[i]=returnGenotypeGivenParentsFactor(j, parent1Index ,  parent2Index , name, self.totalAlleles)
+                self.factorList[i]=returnNonFoundersFactor(j, parent1Index ,  parent2Index , self.nonfounderpriorvalues, name,self.totalAlleles)
                 #returnGenotypeGivenParentsFactor(numAlleles, genotypeVarChild, genotypeVarParentOne, genotypeVarParentTwo)
 
             name=self.pedlist[i].getid()+" read phenotype | " + self.pedlist[i].getid() + " genotype"
@@ -109,5 +109,15 @@ class PgmNetworkFactory(object):
             sys.exit(1)
 
 
+    """ return a list of the pedigree individual ids (samplenames) of the pedigree (ped file) used to construct the genetic network """
+    def getSampleNames(self):
+        return self.pedids
+
+
     def returnTotalSize(self):
         return self.totalsize
+
+    def returnGenotypeFactorIdxSampleNames(self):
+        """ return a list which contains the sample names  of the genotype variables in the pgm network self.factorList """
+        #print range(self.totalFactors/2)
+        return [ self.pedlist[i].getid()  for i in range(self.totalFactors/2) ]
