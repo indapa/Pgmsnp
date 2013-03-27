@@ -40,14 +40,16 @@ class PileupFactory(object):
                 observed_data=[] #a list of (basecall, basequality) tuples
                 for pileupread in pileupcolumn.pileups:
                     if pileupread.alignment.seq[pileupread.qpos] == 'N':continue
+                    bq=ord ( pileupread.alignment.qual[ pileupread.qpos ] )  - 33
+                    if bq == 0: continue
                     #print pileupread.alignment.qname
                     #tid=pileupread.alignment.tid
                     
                     readgroup=dict( pileupread.alignment.tags )['RG']
                     sample=self.readgroupdict[readgroup]
                     #ascii conver the basequality
-                    bq=ord ( pileupread.alignment.qual[ pileupread.qpos ] )  - 33
-
+                    
+                    
                     #print samfile.getrname(tid),pileupcolumn.pos, observed_data
                     #observed_data is a list of tuples
                     #the tuple is [samplename, readgroupID, alignment_name,basecall,phred_scale_basequality
