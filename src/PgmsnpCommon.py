@@ -2,7 +2,6 @@
 from Genotype import *
 import numpy as np
 import itertools
-import sys
 from common import *
 from Factor import *
 from PGMcommon import *
@@ -18,9 +17,12 @@ def calculateGLL(pileup,ploidy=2):
     #with the bases A,C,G,T
    
     l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],ploidy) ]
-    for g in l:
+
+    genotypes=[ Genotype( g, ploidy)  for g in l  ]
+
+    #for g in l:
         
-        genotypes.append( Genotype( g, ploidy) ) #make a Genotype object, add to genotypes list
+    #    genotypes.append( Genotype( g, ploidy) ) #make a Genotype object, add to genotypes list
 
     total_genotypes=len(genotypes)
     h=len(pileup)
@@ -33,6 +35,7 @@ def calculateGLL(pileup,ploidy=2):
     for i in range(h):
         #print pileup[i]
         (calledBase, phred)=(pileup[i].basecall, pileup[i].bq)
+        #print calledBase
         #for the jth possible genotype
         for j in range( len( genotypes)):
             
