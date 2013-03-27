@@ -215,7 +215,9 @@ def main():
         #print  genotypedata
         #print sampleGenotypes
         #print "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence]) + "\t" +"\t".join(MAPgenotypes)
-        print "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence]) + "\t" +"\t".join(numericalMAPgenotypes)
+        if int(pileup_column_pos) % 10000 == 0:
+            sys.stderr.write("processed 10 kbp ...\n")
+        #print "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence]) + "\t" +"\t".join(numericalMAPgenotypes)
         #print site_info
         vcfgenotypeoutput="\t".join(genotypedata)
         output=site_info+ "\t"+vcfgenotypeoutput
