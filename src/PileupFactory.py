@@ -34,19 +34,24 @@ class PileupFactory(object):
             pileup_iter=self.pybam.pileup( chrom,start,end,stepper = "all" )
             for pileupcolumn in pileup_iter:
 
-                if pileupcolumn.pos > end: continue
+                if pileupcolumn.pos+1 > end: continue
+                if pileupcolumn.pos < start: continue
 
                 observed_data=[] #a list of (basecall, basequality) tuples
                 for pileupread in pileupcolumn.pileups:
+                    if pileupread.alignment.seq[pileupread.qpos] == 'N':continue
                     #print pileupread.alignment.qname
-                    tid=pileupread.alignment.tid
+                    #tid=pileupread.alignment.tid
+                    
                     readgroup=dict( pileupread.alignment.tags )['RG']
                     sample=self.readgroupdict[readgroup]
                     #ascii conver the basequality
                     bq=ord ( pileupread.alignment.qual[ pileupread.qpos ] )  - 33
 
                     #print samfile.getrname(tid),pileupcolumn.pos, observed_data
-                    observed_data.append( (sample, readgroup, pileupread.alignment.qname,pileupread.alignment.seq[pileupread.qpos], bq) )
+                    #observed_data is a list of tuples
+                    #the tuple is [samplename, readgroupID, alignment_name,basecall,phred_scale_basequality
+                    observed_data.append( (sample, readgroup, pileupread.alignment.qname, pileupread.alignment.seq[pileupread.qpos], bq) )
                 yield ( PileupData( chrom, start, end, pileupcolumn.pos, observed_data ) )
 
                     
