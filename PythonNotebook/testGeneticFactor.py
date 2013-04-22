@@ -15,7 +15,7 @@ import datetime
 from collections import defaultdict
 #import matplotlib.pyplot as plt
 import pdb
-
+import os
 """ Let's test contructing our genetic network for the pgmsnp caller
     For simplicity we consider each position in a genome indpendently from each other.
     We iterate through the bedfile interval, and for each position in the interval we will:
@@ -29,8 +29,7 @@ import pdb
 def main():
 
     today=datetime.datetime.today()
-    datestr=today.strftime("%m-%d-%y")
-    vcfh=open('pgmsnp.vcf','w')
+    datestr=today.strftime("20%y%m%d")
     usage = "usage: %prog [options] my.bam "
     parser = OptionParser(usage)
     parser.add_option("--bed", type="string", dest="bedfile", help="bed file with coordinates")
@@ -38,7 +37,9 @@ def main():
     parser.add_option("--ped", type="string", dest="pedfile", help= " pedfile of the samples you are analyzing")
     (options, args)=parser.parse_args()
     bamfile=args[0]
-
+    bamfilebasename=return_file_basename(bamfile)
+    vcfoutput=".".join([bamfilebasename, datestr, 'vcf'])
+    vcfh=open(vcfoutput,'w')
     ALPHABET=['AA', 'AC', 'AG', 'AT', 'CC', 'CG', 'CT', 'GG', 'GT', 'TT']
    
     twobit=bx.seq.twobit.TwoBitFile( open( options.tbfile  ) )
