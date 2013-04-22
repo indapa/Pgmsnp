@@ -38,7 +38,7 @@ def main():
     (options, args)=parser.parse_args()
     bamfile=args[0]
     bamfilebasename=return_file_basename(bamfile)
-    vcfoutput=".".join([bamfilebasename, datestr, 'vcf'])
+    vcfoutput=".".join(['pgmsnp',bamfilebasename, datestr, 'vcf'])
     vcfh=open(vcfoutput,'w')
     ALPHABET=['AA', 'AC', 'AG', 'AT', 'CC', 'CG', 'CT', 'GG', 'GT', 'TT']
    
