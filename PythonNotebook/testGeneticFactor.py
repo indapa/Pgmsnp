@@ -59,6 +59,7 @@ def main():
     vcf_metalines.append("##reference="+options.tbfile)
     vcf_metalines.append("##pedfile="+options.pedfile)
     vcf_metalines.append("##bedfile="+options.bedfile)
+    vcf_metalines.append("##bamfile="+bamfile)
     vcf_metalines.append("##INFO=<ID=NS,Number=1,Type=Integer,Description=\"Number of Samples With Data\">")
     vcf_metalines.append( "##INFO=<ID=DP,Number=1,Type=Integer,Description=\"Total Depth\">" )
     vcf_metalines.append( "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" )
