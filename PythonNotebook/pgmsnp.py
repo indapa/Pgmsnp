@@ -107,7 +107,6 @@ def main():
         #lets make our genetic network here:
         pgmNetwork=PgmNetworkFactory(options.pedfile,pileup_column_chrom,pileup_column_pos, refsequence,punnetValues)
         totalSize=pgmNetwork.returnTotalSize()
-        print "totalSize: ", totalSize
         observedSamples=[]
         sampleNames=set(pgmNetwork.getSampleNames())
         #print "pgmNetwork factor list: "
