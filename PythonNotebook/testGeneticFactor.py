@@ -13,6 +13,7 @@ from CliqueTreeOperations import *
 from PedigreeFactors import Pedfile
 import datetime
 from collections import defaultdict
+from itertools import chain
 #import matplotlib.pyplot as plt
 import pdb
 import os
@@ -87,26 +88,29 @@ def main():
     ##CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT",samplestring
 
     for pileup_data_obj in Pfactory.yieldPileupData():
-
         
+        refDepth=defaultdict(lambda: defaultdict(int))
+        altDepth=defaultdict(lambda: defaultdict(int))
         pileup_column_pos=pileup_data_obj.getPileupColumnPos()
         pileup_column_chrom=pileup_data_obj.getChrom()
         refsequence=twobit[pileup_column_chrom][pileup_column_pos:pileup_column_pos+1] #this is the reference base
-
-        
+        refDepth=defaultdict(lambda: defaultdict(int))
+        altDepth=defaultdict(lambda: defaultdict(int))
+        skipsite=False
         #print 'Pileup position: ', pileup_data_obj, "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence])
         #print
         
         qual="."
         filter='.'
         siteDP="DP="+str(pileup_data_obj.getPileupDepth())
-        
+        altDP=0
         sampleDepth=defaultdict(int)
 
 
         #lets make our genetic network here:
         pgmNetwork=PgmNetworkFactory(options.pedfile,pileup_column_chrom,pileup_column_pos, refsequence,punnetValues)
         totalSize=pgmNetwork.returnTotalSize()
+        #print "totalSize: ", totalSize
         observedSamples=[]
         sampleNames=set(pgmNetwork.getSampleNames())
         #print "pgmNetwork factor list: "
@@ -118,11 +122,13 @@ def main():
             sampleDepth[sample]=len(pileup_sample_data)
             observedSamples.append(sample)
             sample_idx=pgmNetwork.getSampleNamePedIndex(sample)
-            #print pgmFactorList[sample_idx + totalSize]
-            #print
             
-            #print pileup_sample_data
-        
+            for data in pileup_sample_data:
+                if data.basecall != refsequence: altDepth[data.sample][data.basecall]+=1
+                if data.basecall == refsequence: refDepth[data.sample][data.basecall]+=1
+            
+       
+            
             value=calculateGLL(pileup_sample_data)
             
 
@@ -134,6 +140,11 @@ def main():
             #GLFactor = Factor( [readVar, genoVar], [1,10], [], 'read_phenotype | genotype ')
             #gPrior=LogFactor( returnGenotypePriorFounderFactor(sequence,['A','C','G','T'], genoVar) )
             #print
+        
+        if sum(chain.from_iterable(d.itervalues() for d in altDepth.itervalues())) < 2: 
+            #print pileup_data_obj.getPileupColumnPos(), altDP
+            continue
+        
         observedSamples=set(observedSamples)
         unobservedSamples=sampleNames-observedSamples
         unobservedIdxs=[ pgmNetwork.getSampleNamePedIndex(sample) for sample in unobservedSamples  ]
@@ -172,23 +183,38 @@ def main():
 
         #get the max marginal factors
         MAXMARGINALS=ComputeExactMarginalsBP(pgmFactorList, [], 1)
-        #print MAXMARGINALS
+        
         #MARGINALS= ComputeExactMarginalsBP( pgmFactorList)
         #this log normalizes the data
         for m in MAXMARGINALS:
-            #print m
+            #print m.getVal()
             m.setVal( np.log( lognormalize(m.getVal()   )   ) )
-        #    print np.sum( lognormalize(m.getVal() ) )
+            #print np.sum( lognormalize(m.getVal() ) )
+            #print'lognormalize: ',  lognormalize(m.getVal() )
+            #print m.getVal()
+            #print
         #    print  m.getVal()
         #    print
         #print "==="
         #get the max value of each factor
-        MAXvalues=[ str( max(m.getVal().tolist() ) ) for m in MAXMARGINALS  ]
-
+        
+        
+                
+                           
+        MAXvalues=[    max(m.getVal().tolist() )  for m in MAXMARGINALS  ]
+        
+        
+        #MAXvalues_phred = [ PhredScore(x) for x in MAXvalues ]
+        """ phred scale the error prob. so we take the 1-posterior, and phred scale it
+            Note we have expoentiate the values then take the complement, then phred scale """
+        phred_gq= [ round(PhredScore(x),2) for x in (1-np.exp(MAXvalues[0:totalSize])) ]
+        #MAXvalues_str= [str(x) for x in MAXvalues]
+        phred_str=[str(x) for x in phred_gq]
+        #print "maxvalues: ",  MAXvalues[0:totalSize]
         #this is the decoding, where we get teh assignment of the variable
         # that has the max marginoal value
         MAPAssignment=MaxDecoding( MAXMARGINALS  )
-        
+        #print "MAPAssignment: ",  MAPAssignment[0:3]
         #print totalSize
         #for idx in range(totalSize):
         #    print ALPHABET[ MAPAssignment[idx] ]
@@ -206,13 +232,16 @@ def main():
         alt=determineAltBases( MAPgenotypes, [refsequence] )
         numericalMAPgenotypes=[ numericalGenotypes(refsequence,alt,map_g) for map_g in MAPgenotypes ]
         #print numericalMAPgenotypes
-        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".", refsequence,alt,qual,filter,infoString, "GT:DP"])
+        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".", refsequence,alt,qual,filter,infoString, "GT:GQ:DP"])
         #zip the genotype assignment and its log-probability together
         #genotypedata=zip(MAPgenotypes,sampleDepths,MAXvalues[0:totalSize])
         #genotypedata=zip(MAPgenotypes,sampleDepths)
-        genotypedata=zip(numericalMAPgenotypes,sampleDepths,MAXvalues[0:totalSize])
-        genotypedata=zip(numericalMAPgenotypes,sampleDepths)
+        #genotypedata=zip(numericalMAPgenotypes,sampleDepths,  MAXvalues_str[0:totalSize] )
+        genotypedata=zip(numericalMAPgenotypes,phred_str, sampleDepths, )
+        #genotypedata=zip(numericalMAPgenotypes,sampleDepths)
+        
         genotypedata=[ ":".join(list(i)) for i in  genotypedata ]
+        #print genotypedata
 
         #print  genotypedata
         #print sampleGenotypes
