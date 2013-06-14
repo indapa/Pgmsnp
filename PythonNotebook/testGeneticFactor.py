@@ -149,6 +149,9 @@ def main():
             #print
         
     
+        if sum(chain.from_iterable(d.itervalues() for d in altDepth.itervalues())) < 2: 
+       #print pileup_data_obj.getPileupColumnPos(), altDP
+            continue
         
         observedSamples=set(observedSamples)
         unobservedSamples=sampleNames-observedSamples
