@@ -17,6 +17,7 @@ from itertools import chain
 #import matplotlib.pyplot as plt
 import pdb
 import os
+import subprocess
 """ Let's test contructing our genetic network for the pgmsnp caller
     For simplicity we consider each position in a genome indpendently from each other.
     We iterate through the bedfile interval, and for each position in the interval we will:
@@ -28,7 +29,8 @@ import os
 """
 
 def main():
-
+    """ getting the git hash in python: http://stackoverflow.com/a/14989911/1735942"""
+    label = subprocess.check_output(["git", "rev-parse", "HEAD"])
     today=datetime.datetime.today()
     datestr=today.strftime("20%y%m%d")
     usage = "usage: %prog [options] my.bam "
@@ -37,6 +39,9 @@ def main():
     parser.add_option("--tbf", type="string", dest="tbfile", help=" *.2bit file of the reference sequence")
     parser.add_option("--ped", type="string", dest="pedfile", help= " pedfile of the samples you are analyzing")
     (options, args)=parser.parse_args()
+    
+    commandline=";".join(sys.argv)
+    
     bamfile=args[0]
     bamfilebasename=return_file_basename(bamfile)
     vcfoutput=".".join(['pgmsnp',bamfilebasename, datestr, 'vcf'])
@@ -57,6 +62,8 @@ def main():
     vcf_metalines=[]
     vcf_metalines.append ( "##fileformat=VCFv4.1")
     vcf_metalines.append( "##fileDate="+datestr )
+    vcf_metalines.append("##testGeneticFactor="+commandline)
+    vcf_metalines.append("##version="+label.strip())
     vcf_metalines.append("##reference="+options.tbfile)
     vcf_metalines.append("##pedfile="+options.pedfile)
     vcf_metalines.append("##bedfile="+options.bedfile)
@@ -141,9 +148,7 @@ def main():
             #gPrior=LogFactor( returnGenotypePriorFounderFactor(sequence,['A','C','G','T'], genoVar) )
             #print
         
-        if sum(chain.from_iterable(d.itervalues() for d in altDepth.itervalues())) < 2: 
-            #print pileup_data_obj.getPileupColumnPos(), altDP
-            continue
+    
         
         observedSamples=set(observedSamples)
         unobservedSamples=sampleNames-observedSamples
