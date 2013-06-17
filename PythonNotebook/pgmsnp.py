@@ -38,6 +38,7 @@ def main():
     parser.add_option("--bed", type="string", dest="bedfile", help="bed file with coordinates")
     parser.add_option("--tbf", type="string", dest="tbfile", help=" *.2bit file of the reference sequence")
     parser.add_option("--ped", type="string", dest="pedfile", help= " pedfile of the samples you are analyzing")
+    parser.add_option("--min-nonref-count", dest="minAlt", default=2, help="minimum observation of nonref allele for genotype inference (default 2)")
     (options, args)=parser.parse_args()
     
     commandline=";".join(sys.argv)
@@ -149,7 +150,7 @@ def main():
             #print
         
     
-        if sum(chain.from_iterable(d.itervalues() for d in altDepth.itervalues())) < 2: 
+        if sum(chain.from_iterable(d.itervalues() for d in altDepth.itervalues())) < options.minAlt: 
        #print pileup_data_obj.getPileupColumnPos(), altDP
             continue
         
