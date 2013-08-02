@@ -22,6 +22,9 @@ class PileupData(object):
     def __str__(self):
         return "\t".join( [self.chrom, str(self.start), str(self.end), str(self.pileupcolumn_pos), "total pileupd reads: " + str(len(self.pileupList))])
 
+    def getBedString(self):
+        return "\t".join([self.chrom,str(self.start), str(self.end) ])
+
     def getChrom(self):
         return self.chrom
     def setChrom(self,chrom):
