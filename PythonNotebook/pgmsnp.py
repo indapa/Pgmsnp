@@ -5,6 +5,7 @@ from BedFile import Bedfile
 from PileupFactory import PileupFactory
 from PgmsnpCommon import *
 from common import *
+from FactorOperations import posterior_genotypes_values
 #import networkx as nx
 import bx.seq.twobit
 from FactorOperations import *
@@ -15,7 +16,7 @@ import datetime
 from collections import defaultdict
 from itertools import chain
 #import matplotlib.pyplot as plt
-import pdb
+#import pdb
 import os
 import subprocess
 """ Let's test contructing our genetic network for the pgmsnp caller
@@ -39,16 +40,29 @@ def main():
     parser.add_option("--tbf", type="string", dest="tbfile", help=" *.2bit file of the reference sequence")
     parser.add_option("--ped", type="string", dest="pedfile", help= " pedfile of the samples you are analyzing")
     parser.add_option("--min-nonref-count", dest="minAlt", default=2, help="minimum observation of nonref allele for genotype inference (default 2)")
+    parser.add_option("--debug", action="store_true", dest="debug", default=False)
     (options, args)=parser.parse_args()
     
     commandline=";".join(sys.argv)
     
     bamfile=args[0]
+    #print options.bedfile
+   
     bamfilebasename=return_file_basename(bamfile)
     vcfoutput=".".join(['pgmsnp',bamfilebasename, datestr, 'vcf'])
+    
+    if options.debug == True:
+        prettybaseoutput=".".join(['pgmsnp',bamfilebasename, datestr,'pretty' ])
+        try:
+            os.remove(prettybaseoutput)
+        except OSError:
+            pass
+        prettyfh=open(prettybaseoutput, 'a')    
+    
     vcfh=open(vcfoutput,'w')
+    
     ALPHABET=['AA', 'AC', 'AG', 'AT', 'CC', 'CG', 'CT', 'GG', 'GT', 'TT']
-   
+  
     twobit=bx.seq.twobit.TwoBitFile( open( options.tbfile  ) )
     bedobj=Bedfile(options.bedfile)
     pybamfile=pysam.Samfile( bamfile, "rb" )
@@ -56,6 +70,7 @@ def main():
     pedfile.parsePedfile()
 
     samplenames=pedfile.returnIndivids()
+    
     samplestring="\t".join(samplenames)
     
 
@@ -192,10 +207,15 @@ def main():
 
         #get the max marginal factors
         MAXMARGINALS=ComputeExactMarginalsBP(pgmFactorList, [], 1)
+        sampleNames=pgmNetwork.returnGenotypeFactorIdxSampleNames()
+        
+        if options.debug == True:
+            posterior_genotypes_values(MAXMARGINALS, ALPHABET,samplenames, pileup_data_obj.getBedString(), prettyfh)
         
         #MARGINALS= ComputeExactMarginalsBP( pgmFactorList)
         #this log normalizes the data
         for m in MAXMARGINALS:
+            #print m
             #print m.getVal()
             m.setVal( np.log( lognormalize(m.getVal()   )   ) )
             #print np.sum( lognormalize(m.getVal() ) )
@@ -207,13 +227,23 @@ def main():
         #print "==="
         #get the max value of each factor
         
-        
+        #print len(MAXMARGINALS)
                 
-                           
+        """ max values will hold the max; assuming its unique. 
+            get a list of the the values as well """  
+        
+        #for m in MAXMARGINALS:
+        #    print m
+        #    print "total size: ", totalSize
+        #    """ ask yourself, is the  max unique? """
+        #    print max(m.getVal().tolist())
+        #    print
+                          
         MAXvalues=[    max(m.getVal().tolist() )  for m in MAXMARGINALS  ]
         
         
         #MAXvalues_phred = [ PhredScore(x) for x in MAXvalues ]
+        """ this code deals with calculating genotype quality GQ .... """
         """ phred scale the error prob. so we take the 1-posterior, and phred scale it
             Note we have expoentiate the values then take the complement, then phred scale """
         phred_gq= [ round(PhredScore(x),2) for x in (1-np.exp(MAXvalues[0:totalSize])) ]
@@ -222,7 +252,11 @@ def main():
         #print "maxvalues: ",  MAXvalues[0:totalSize]
         #this is the decoding, where we get teh assignment of the variable
         # that has the max marginoal value
+        
         MAPAssignment=MaxDecoding( MAXMARGINALS  )
+        #MAPAssignment=MaxDecodingNonUniq( MAXMARGINALS  )
+        #pdb.set_trace()
+        
         #print "MAPAssignment: ",  MAPAssignment[0:3]
         #print totalSize
         #for idx in range(totalSize):
