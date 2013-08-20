@@ -16,7 +16,7 @@ import datetime
 from collections import defaultdict
 from itertools import chain
 #import matplotlib.pyplot as plt
-#import pdb
+import pdb
 import os
 import subprocess
 """ Let's test contructing our genetic network for the pgmsnp caller
@@ -153,18 +153,22 @@ def main():
        
             
             value=calculateGLL(pileup_sample_data)
+            #pdb.set_trace()
             
 
             pgmFactorList[sample_idx + totalSize].setVal(value)
-            #we initially get the log-likelihood, but go back to probablity space first
-            pgmFactorList[sample_idx + totalSize] = ExpFactor( pgmFactorList[sample_idx + totalSize] )
+            #pdb.set_trace()
+            """we initially get the log-likelihood, but go back to probablity space first """
+            #pgmFactorList[sample_idx + totalSize] = ExpFactor( pgmFactorList[sample_idx + totalSize] )
+            pgmFactorList[sample_idx + totalSize] = ExpFactorNormalize( pgmFactorList[sample_idx + totalSize] )
+            
             #print pgmFactorList[sample_idx + totalSize]
             
             #GLFactor = Factor( [readVar, genoVar], [1,10], [], 'read_phenotype | genotype ')
             #gPrior=LogFactor( returnGenotypePriorFounderFactor(sequence,['A','C','G','T'], genoVar) )
             #print
         
-    
+        
         if sum(chain.from_iterable(d.itervalues() for d in altDepth.itervalues())) < options.minAlt: 
        #print pileup_data_obj.getPileupColumnPos(), altDP
             continue
@@ -206,13 +210,15 @@ def main():
         #print cTree
 
         #get the max marginal factors
-        MAXMARGINALS=ComputeExactMarginalsBP(pgmFactorList, [], 1)
-        sampleNames=pgmNetwork.returnGenotypeFactorIdxSampleNames()
         
+        (MAXMARGINALS,JOINT)=ComputeExactMarginalsBP(pgmFactorList, [], 1, 1)
+        
+        sampleNames=pgmNetwork.returnGenotypeFactorIdxSampleNames()
+        #pdb.set_trace()
         if options.debug == True:
             posterior_genotypes_values(MAXMARGINALS, ALPHABET,samplenames, pileup_data_obj.getBedString(), prettyfh)
         
-        #MARGINALS= ComputeExactMarginalsBP( pgmFactorList)
+        
         #this log normalizes the data
         for m in MAXMARGINALS:
             #print m
@@ -273,9 +279,43 @@ def main():
         #print MAPgenotypes
 
         alt=determineAltBases( MAPgenotypes, [refsequence] )
+        
+        dimension=np.prod(JOINT.getCard())
+        strides=variableStride(JOINT)
+        RR_genotype=refsequence+refsequence
+        idx=IndexToAssignment ( np.arange(np.prod(JOINT.getCard()) ), JOINT.getCard() )-1
+        g_idx= genotypeToIndex( RR_genotype, ploidy=2)
+        """ conviently enough, the index of the all ref assignment is genotype idx repeated however many times there are samples """
+        idx_string=str(g_idx)*totalSize
+        
+        idx_numbr=int(idx_string)
+        allrefs_ass=generateAllReferenceGenotypesAssignment(g_idx, totalSize)
+        
+        if np.array_equal(idx[idx_numbr], allrefs_ass) == False:
+            print "==="
+            print "value assignment doesn't equal all reference assignment"
+            print idx[idx_numbr]
+            print allrefs_ass
+            print "==="
+            sys.exit(1)
+        #idx_all_refs_ass=IndexOfAssignment(JOINT, strides, allref_ass )
+        else:
+            val=JOINT.getVal()[idx_numbr]
+        
+        #pdb.set_trace()
+        
+        """ Phred score takes in the error probability
+        In this case the error prob is the prob that everyone is homozygous reference
+        which is the val we get from the joint distribution factor above """
+        QUAL=round(PhredScore(val),2)
+       
+        """ emit numerical genotypes as per vcf convention """
         numericalMAPgenotypes=[ numericalGenotypes(refsequence,alt,map_g) for map_g in MAPgenotypes ]
         #print numericalMAPgenotypes
-        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".", refsequence,alt,qual,filter,infoString, "GT:GQ:DP"])
+        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), str(QUAL), refsequence,alt,qual,filter,infoString, "GT:GQ:DP"])
+        #print site_info
+        #pdb.set_trace()
+        #site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".", refsequence,alt,qual,filter,infoString, "GT:GQ:DP"])
         #zip the genotype assignment and its log-probability together
         #genotypedata=zip(MAPgenotypes,sampleDepths,MAXvalues[0:totalSize])
         #genotypedata=zip(MAPgenotypes,sampleDepths)
