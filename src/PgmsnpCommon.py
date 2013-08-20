@@ -7,17 +7,17 @@ from Factor import *
 from PGMcommon import *
 from FactorOperations import *
 from collections import defaultdict
+import pdb
 
 def calculateGLL(pileup,ploidy=2):
     """ calculate genotype log-likelhood(s) for all 10 possible genotypes
         given a list of namedtuples representing a pileup column """
     genotypes=[] #list of Genotype objects
     
-    #enumerate possible genotype combinations for the value of ploidy
-    #with the bases A,C,G,T
+    """ enumerate possible genotype combinations for the value of ploidy with the bases A,C,G,T """
    
     l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],ploidy) ]
-
+    #print l
     genotypes=[ Genotype( g, ploidy)  for g in l  ]
 
     #for g in l:
@@ -50,14 +50,17 @@ def calculateGLL(pileup,ploidy=2):
     #print np.shape( likelihood_matrix )
     #print np.log(likelihood_matrix)
 
-    #now this is the log likelihood 
+    """now this is the log likelihood """ 
     #print np.log(likelihood_matrix)
-    #the overall (log) likelihood are each of the 10 column sums
-    #genotypelikelihoods=np.sum( np.log(likelihood_matrix), axis=0)
+    """the overall (log) likelihood are each of the 10 column sums
+       we return the the genotype (log) likelihood for each possible genotype """
+    
+    
     return np.sum( np.log(likelihood_matrix), axis=0)
 
 
 def calculateNoObservationsGL(ploidy=2):
+    """ the numbers returned are in probability space, not log-space! """
     
     l=[ "".join( list(combo)) for combo in itertools.combinations_with_replacement(['A','C','G','T'],ploidy) ]
     genotypes=[ Genotype( g, ploidy)  for g in l ]
@@ -77,7 +80,7 @@ def indexToGenotype( index,alleles='ACGT',ploidy=2 ):
     genotypes= [ "".join(list(genotype))  for genotype in itertools.combinations_with_replacement(alleles, ploidy) ]
 
     try:
-       return genotypes[index]
+        return genotypes[index]
     except IndexError:
         print "Index out of bounds, not a valid index for list of genotypes"
 
@@ -90,6 +93,7 @@ def genotypeToIndex( geno, ploidy=2,alleles='ACGT'):
     
 
     try:
+        
         return  genotypes.index(geno)
     except ValueError:
         print "genotype not in list of genotypes."
@@ -220,7 +224,7 @@ def returnPunnetValues( numAlleles=4 ):
     cardinality=np.array( [ngenos,ngenos,ngenos] )
 
     #set the values to zero initially
-    values=np.zeros( np.prod(cardinality)).tolist()
+    
     values=np.zeros( np.prod(cardinality)).tolist()
     assignments=IndexToAssignment(np.arange(np.prod(cardinality)),cardinality)-1
 
@@ -249,7 +253,8 @@ def returnPunnetValues( numAlleles=4 ):
 
         hist=(np.array ( hist)) /4
         values[z]=hist[childAssignment]
-
+        if values[z] == 0:
+            values[z] = .00001
 
         #print
 
@@ -257,6 +262,16 @@ def returnPunnetValues( numAlleles=4 ):
 
 
 
+def generateAllReferenceGenotypesAssignment ( g_idx, totalGenotypes):
+    """ return the assignment that corresponds to all individuals being homozygous reference
+    g_idx is the index of the reference genotype in the samplespace of genotypes returned by
+    calling genotypeToIndex.
+    totalGenotypes is the number genotypes which is half the number of total variables in the pgm network """
+    total=totalGenotypes * 2
+    assignment= [g_idx for i in range(0, totalGenotypes) ]
+    for i in range(totalGenotypes, total):
+        assignment.append(0)
+    return np.array (assignment)
 
 
 
