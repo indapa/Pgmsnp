@@ -210,7 +210,8 @@ def main():
         #print cTree
 
         #get the max marginal factors
-        
+        if options.debug == True:
+            sys.stderr.write("computing exact marginals and joint from clique tree...\n")
         (MAXMARGINALS,JOINT)=ComputeExactMarginalsBP(pgmFactorList, [], 1, 1)
         
         sampleNames=pgmNetwork.returnGenotypeFactorIdxSampleNames()
