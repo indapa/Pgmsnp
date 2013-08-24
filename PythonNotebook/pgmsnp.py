@@ -49,7 +49,9 @@ def main():
     #print options.bedfile
    
     bamfilebasename=return_file_basename(bamfile)
-    vcfoutput=".".join(['pgmsnp',bamfilebasename, datestr, 'vcf'])
+    bedfilebasename=return_file_basename(options.bedfile)
+    vcfoutput=".".join(['pgmsnp',bamfilebasename,bedfilebasename, datestr, 'vcf'])
+    
     
     if options.debug == True:
         prettybaseoutput=".".join(['pgmsnp',bamfilebasename, datestr,'pretty' ])
@@ -78,7 +80,7 @@ def main():
     vcf_metalines=[]
     vcf_metalines.append ( "##fileformat=VCFv4.1")
     vcf_metalines.append( "##fileDate="+datestr )
-    vcf_metalines.append("##testGeneticFactor="+commandline)
+    vcf_metalines.append("##pgmsnp.py="+commandline)
     vcf_metalines.append("##version="+label.strip())
     vcf_metalines.append("##reference="+options.tbfile)
     vcf_metalines.append("##pedfile="+options.pedfile)
@@ -313,7 +315,7 @@ def main():
         """ emit numerical genotypes as per vcf convention """
         numericalMAPgenotypes=[ numericalGenotypes(refsequence,alt,map_g) for map_g in MAPgenotypes ]
         #print numericalMAPgenotypes
-        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), str(QUAL), refsequence,alt,qual,filter,infoString, "GT:GQ:DP"])
+        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".",refsequence,alt,QUAL,filter,infoString, "GT:GQ:DP"])
         #print site_info
         #pdb.set_trace()
         #site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".", refsequence,alt,qual,filter,infoString, "GT:GQ:DP"])
