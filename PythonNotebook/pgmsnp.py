@@ -31,7 +31,7 @@ import subprocess
 
 def main():
     """ getting the git hash in python: http://stackoverflow.com/a/14989911/1735942"""
-    label = subprocess.check_output(["git", "rev-parse", "HEAD"])
+    #label = subprocess.check_output(["git", "rev-parse", "HEAD"])
     today=datetime.datetime.today()
     datestr=today.strftime("20%y%m%d")
     usage = "usage: %prog [options] my.bam "
@@ -81,7 +81,7 @@ def main():
     vcf_metalines.append ( "##fileformat=VCFv4.1")
     vcf_metalines.append( "##fileDate="+datestr )
     vcf_metalines.append("##pgmsnp.py="+commandline)
-    vcf_metalines.append("##version="+label.strip())
+    #vcf_metalines.append("##version="+label.strip())
     vcf_metalines.append("##reference="+options.tbfile)
     vcf_metalines.append("##pedfile="+options.pedfile)
     vcf_metalines.append("##bedfile="+options.bedfile)
