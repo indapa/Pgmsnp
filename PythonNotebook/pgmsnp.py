@@ -315,7 +315,7 @@ def main():
         """ emit numerical genotypes as per vcf convention """
         numericalMAPgenotypes=[ numericalGenotypes(refsequence,alt,map_g) for map_g in MAPgenotypes ]
         #print numericalMAPgenotypes
-        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".",refsequence,alt,QUAL,filter,infoString, "GT:GQ:DP"])
+        site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".",refsequence,alt,str(QUAL),filter,infoString, "GT:GQ:DP"])
         #print site_info
         #pdb.set_trace()
         #site_info="\t".join([pileup_column_chrom, str(pileup_column_pos+1), ".", refsequence,alt,qual,filter,infoString, "GT:GQ:DP"])
