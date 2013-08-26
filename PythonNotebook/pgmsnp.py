@@ -39,7 +39,9 @@ def main():
     parser.add_option("--bed", type="string", dest="bedfile", help="bed file with coordinates")
     parser.add_option("--tbf", type="string", dest="tbfile", help=" *.2bit file of the reference sequence")
     parser.add_option("--ped", type="string", dest="pedfile", help= " pedfile of the samples you are analyzing")
-    parser.add_option("--min-nonref-count", dest="minAlt", default=2, help="minimum observation of nonref allele for genotype inference (default 2)")
+    parser.add_option("--min-nonref-count", type="int", dest="minAlt", default=2, help="minimum observation of nonref allele for genotype inference (default 2)")
+    parser.add_option("--mapq", dest="mapq", type="int", default=30, help="exclude read if  mapping quality is less than Q default:30 ")
+    parser.add_option("--bq", dest="bq", type="int", default=25, help="exclude base if basequality is less than Q: default 25")
     parser.add_option("--debug", action="store_true", dest="debug", default=False)
     (options, args)=parser.parse_args()
     
@@ -112,7 +114,8 @@ def main():
 
     ##CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT",samplestring
 
-    for pileup_data_obj in Pfactory.yieldPileupData():
+    for pileup_data_obj in Pfactory.yieldPileupData(options.mapq, options.bq):
+        
         
         refDepth=defaultdict(lambda: defaultdict(int))
         altDepth=defaultdict(lambda: defaultdict(int))
