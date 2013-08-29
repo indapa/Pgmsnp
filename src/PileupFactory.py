@@ -42,9 +42,14 @@ class PileupFactory(object):
                 for pileupread in pileupcolumn.pileups:
                     #pdb.set_trace()
                     if pileupread.alignment.mapq < minmapq: continue
+                    #pdb.set_trace()
                     
+                    """ skip deletions for now ... """
+                    if pileupread.is_del: continue
                     
+                    """ skip N bases """
                     if pileupread.alignment.seq[pileupread.qpos] == 'N':continue
+                    
                     bq=ord ( pileupread.alignment.qual[ pileupread.qpos ] )  - 33
                     if bq < minbq: continue
                    
@@ -62,7 +67,7 @@ class PileupFactory(object):
                     #print samfile.getrname(tid),pileupcolumn.pos, observed_data
                     #observed_data is a list of tuples
                     #the tuple is [samplename, readgroupID, alignment_name,basecall,phred_scale_basequality
-                    observed_data.append( (sample, readgroup, pileupread.alignment.qname, pileupread.alignment.seq[pileupread.qpos], bq) )
+                    observed_data.append( (sample, readgroup, pileupread.alignment.qname, pileupread.alignment.seq[pileupread.qpos], bq, pileupread.alignment.cigarstring) )
                 yield ( PileupData( chrom, start, end, pileupcolumn.pos, observed_data ) )
 
                     
