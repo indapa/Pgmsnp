@@ -14,7 +14,7 @@ class PileupData(object):
         """ this will be a list of tuples
             with the tuples consisting of (sample,readgroup,alignment name, base, base quality"""
        
-        Pileup = collections.namedtuple('Pileup', ['sample', 'RG', 'alignmentname', 'basecall', 'bq'])
+        Pileup = collections.namedtuple('Pileup', ['sample', 'RG', 'alignmentname', 'basecall', 'bq' ,'cigarstring'])
         #self.pileupList is now a list of Pileup namedtuple(s)
         self.pileupList= map(Pileup._make, pileuplist)
 
