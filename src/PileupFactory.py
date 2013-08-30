@@ -42,10 +42,11 @@ class PileupFactory(object):
                 for pileupread in pileupcolumn.pileups:
                     #pdb.set_trace()
                     if pileupread.alignment.mapq < minmapq: continue
-                    #pdb.set_trace()
                     
-                    """ skip deletions for now ... """
-                    if pileupread.is_del: continue
+                    """ skip deletions and insertions for now ... """
+                    if pileupread.is_del or pileupread.indel !=0: 
+                        #pdb.set_trace()
+                        continue
                     
                     """ skip N bases """
                     if pileupread.alignment.seq[pileupread.qpos] == 'N':continue
