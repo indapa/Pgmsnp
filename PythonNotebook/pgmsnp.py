@@ -42,6 +42,8 @@ def main():
     parser.add_option("--min-nonref-count", type="int", dest="minAlt", default=2, help="minimum observation of nonref allele for genotype inference (default 2)")
     parser.add_option("--mapq", dest="mapq", type="int", default=30, help="exclude read if  mapping quality is less than Q default:30 ")
     parser.add_option("--bq", dest="bq", type="int", default=25, help="exclude base if basequality is less than Q: default 25")
+    
+    parser.add_option("--emitall", action="store_true", dest="emitall", help="emit all sites, even those without min alt threshold", default=False)
     parser.add_option("--debug", action="store_true", dest="debug", default=False)
     (options, args)=parser.parse_args()
     
@@ -64,7 +66,7 @@ def main():
         prettyfh=open(prettybaseoutput, 'a')    
     
     vcfh=open(vcfoutput,'w')
-    
+    DNA_ALPHABET= ['A', 'C', 'G' ,'T']
     ALPHABET=['AA', 'AC', 'AG', 'AT', 'CC', 'CG', 'CT', 'GG', 'GT', 'TT']
   
     twobit=bx.seq.twobit.TwoBitFile( open( options.tbfile  ) )
@@ -93,6 +95,7 @@ def main():
     vcf_metalines.append( "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">" )
     vcf_metalines.append( "##FORMAT=<ID=GQ,Number=1,Type=Integer,Description=\"Genotype Quality\">" )
     vcf_metalines.append( "##FORMAT=<ID=DP,Number=1,Type=Integer,Description=\"Read Depth\">" )
+    #vcf_metalines.apppend("##FILTER=<ID=LowQual,Description=\"Low quality\">")
     vcf_column_headers=["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT",samplestring]
     vcf_metalines.append( "\t".join(vcf_column_headers))
 
@@ -126,6 +129,7 @@ def main():
         altDepth=defaultdict(lambda: defaultdict(int))
         skipsite=False
         #print 'Pileup position: ', pileup_data_obj, "\t".join( [pileup_column_chrom,  str(pileup_column_pos), refsequence])
+        if refsequence not in DNA_ALPHABET: continue
         #print
         
         qual="."
@@ -173,9 +177,11 @@ def main():
             #gPrior=LogFactor( returnGenotypePriorFounderFactor(sequence,['A','C','G','T'], genoVar) )
             #print
         
-        
-        if sum(chain.from_iterable(d.itervalues() for d in altDepth.itervalues())) < options.minAlt: 
-       #print pileup_data_obj.getPileupColumnPos(), altDP
+       
+        """ in order for genotype inference to continue, minAlt value must be passed
+            If it isn't and emitall is True, then we do genotype inference. Otherwise continue""" 
+        if sum(chain.from_iterable(d.itervalues() for d in altDepth.itervalues())) < options.minAlt and options.emitall == False: 
+       
             continue
         
         observedSamples=set(observedSamples)
@@ -217,19 +223,22 @@ def main():
         #get the max marginal factors
         if options.debug == True:
             sys.stderr.write("computing exact marginals and joint from clique tree...\n")
+        
         (MAXMARGINALS,JOINT)=ComputeExactMarginalsBP(pgmFactorList, [], 1, 1)
         
         sampleNames=pgmNetwork.returnGenotypeFactorIdxSampleNames()
         #pdb.set_trace()
         if options.debug == True:
-            posterior_genotypes_values(MAXMARGINALS, ALPHABET,samplenames, pileup_data_obj.getBedString(), prettyfh)
+            posterior_genotypes_values(MAXMARGINALS, ALPHABET,samplenames, "\t".join([pileup_column_chrom, str(pileup_column_pos+1)]), prettyfh)
         
         
         #this log normalizes the data
         for m in MAXMARGINALS:
             #print m
             #print m.getVal()
-            m.setVal( np.log( lognormalize(m.getVal()   )   ) )
+            #pdb.set_trace()
+            m.setVal( np.log( m.getVal() / np.sum(m.getVal() )) )
+            #m.setVal( np.log( lognormalize(m.getVal()   )   ) )
             #print np.sum( lognormalize(m.getVal() ) )
             #print'lognormalize: ',  lognormalize(m.getVal() )
             #print m.getVal()
@@ -252,7 +261,7 @@ def main():
         #    print
                           
         MAXvalues=[    max(m.getVal().tolist() )  for m in MAXMARGINALS  ]
-        
+        #pdb.set_trace()
         
         #MAXvalues_phred = [ PhredScore(x) for x in MAXvalues ]
         """ this code deals with calculating genotype quality GQ .... """
